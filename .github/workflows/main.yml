@@ -102,12 +102,12 @@ jobs:
         run: |
           mv dist/tdmgr*.app dist/tdmgr-macOS.app
       - name: 'Tar files'
-        run: tar -cvf dist/dist.tar dist/*
+        run: tar -cvf dist/MacOS.tar dist/*
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v3
         with:
           name: app
-          path: dist/dist.tar
+          path: dist/*.tar
 
   release:
     needs: [build-windows, build-windows-x86, build-ubuntu, build-macos]
@@ -123,7 +123,7 @@ jobs:
         uses: jason2866/action-gh-release@v1.1
         #if: startsWith(github.ref, 'refs/tags/')
         with:
-          tag_name: ${{ github.run_number }}
+          tag_name: ${{ GITHUB_REF#refs/*/ }}
           prerelease: true
           files: dist/*
         env:
