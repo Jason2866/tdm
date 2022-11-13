@@ -80,7 +80,7 @@ jobs:
 
 
   build-macos:
-    runs-on: macOS-latest
+    runs-on: macOS-12
     continue-on-error: true
     steps:
       - name: Checkout
