@@ -73,7 +73,7 @@ jobs:
         run: gzip dist/tdmgr_*
       - name: 'show gzip'
         run: ls dist
-      - uses: actions/upload-artifact@ve
+      - uses: actions/upload-artifact@v3
         with:
           name: Ubuntu
           path: dist/tdmgr_*.gz
