@@ -107,18 +107,24 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: macOS
-          path: dist.tar
+          path: dist/dist.tar
+
+  release:
+    needs: [build-windows, build-windows-x86, build-ubuntu, build-macos]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
       - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
           name: Apps download
-          path: ./app      
+          path: ./dist      
       - name: Release
         uses: jason2866/action-gh-release@v1.1
         #if: startsWith(github.ref, 'refs/tags/')
         with:
           tag_name: ${{ github.run_number }}
           prerelease: true
-          files: app/*
+          files: dist/*
         env:
          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
