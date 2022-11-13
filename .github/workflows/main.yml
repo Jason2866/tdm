@@ -12,9 +12,9 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
           python-version: '3.7'
           architecture: 'x64'
@@ -24,7 +24,7 @@ jobs:
       - name: Run PyInstaller
         run: |
           python -m PyInstaller tdmgr.spec
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: Windows_tdmgr
           path: dist/tdmgr_*.exe
@@ -34,9 +34,9 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
           python-version: '3.7'
           architecture: 'x86'
@@ -46,7 +46,7 @@ jobs:
       - name: Run PyInstaller
         run: |
           python -m PyInstaller tdmgr32.spec
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: Windows_tdmgr32
           path: dist/tdmgr_*.exe
@@ -56,9 +56,9 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
           python-version: '3.9'
       - name: Install requirements
@@ -73,7 +73,7 @@ jobs:
         run: gzip dist/tdmgr_*
       - name: 'show gzip'
         run: ls dist
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@ve
         with:
           name: Ubuntu
           path: dist/tdmgr_*.gz
@@ -84,9 +84,9 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
           python-version: '3.9'
       - name: Install requirements
@@ -104,7 +104,7 @@ jobs:
       - name: 'Tar files'
         run: tar -cvf dist.tar dist/*
       - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: macOS
           path: dist.tar
