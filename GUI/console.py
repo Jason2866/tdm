@@ -5,7 +5,6 @@ from PyQt5.QtCore import (
     QDir,
     QEvent,
     QRegExp,
-    QSettings,
     QSize,
     QStringListModel,
     Qt,
@@ -36,13 +35,13 @@ class ConsoleWidget(QDockWidget):
 
     sendCommand = pyqtSignal(str, str)
 
-    def __init__(self, device, *args, **kwargs):
+    def __init__(self, settings, device, *args, **kwargs):
         super().__init__()
         self.setAllowedAreas(Qt.BottomDockWidgetArea)
         self.setWindowTitle(f"Console [{device.name}]")
         self.device = device
 
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
+        self.settings = settings
 
         console_font_size = self.settings.value("console_font_size", 9, int)
         console_font.setPointSize(console_font_size)
@@ -79,12 +78,12 @@ class ConsoleWidget(QDockWidget):
 
         command_cpl.activated.connect(self.command.clear, Qt.QueuedConnection)
 
-        pbSave = QPushButton(QIcon("GUI/icons/save.png"), "")
+        pbSave = QPushButton(QIcon(":/save.png"), "")
         pbSave.setFlat(True)
         pbSave.setToolTip("Save console")
         pbSave.clicked.connect(self.save_console)
 
-        pbClear = QPushButton(QIcon("GUI/icons/clear.png"), "")
+        pbClear = QPushButton(QIcon(":/clear.png"), "")
         pbClear.setFlat(True)
         pbClear.setToolTip("Clear console")
         pbClear.clicked.connect(self.clear_console)

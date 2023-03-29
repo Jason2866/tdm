@@ -1,19 +1,21 @@
 #!/usr/bin/env python
+import argparse
 import csv
 import logging
 import os
+import pathlib
 import re
 import sys
 from json import loads
+from logging.handlers import TimedRotatingFileHandler
 
-from PyQt5.QtCore import QDir, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
+from PyQt5.QtCore import QDir, QFileInfo, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
 from PyQt5.QtGui import QDesktopServices, QFont, QIcon
 from PyQt5.QtWidgets import (
     QAction,
     QApplication,
     QDialog,
     QFileDialog,
-    QFrame,
     QInputDialog,
     QMainWindow,
     QMdiArea,
@@ -22,20 +24,14 @@ from PyQt5.QtWidgets import (
     QStatusBar,
 )
 
-from GUI.dialogs import ClearLWTDialog, PrefsDialog
-
-try:
-    from PyQt5.QtWebEngineWidgets import QWebEngineView
-except ImportError:
-    pass
-
 from GUI import icons  # noqa: F401
 from GUI.console import ConsoleWidget
 from GUI.devices import DevicesListWidget
-from GUI.dialogs import BrokerDialog, BSSIdDialog, PatternsDialog
+from GUI.dialogs import BrokerDialog, BSSIdDialog, ClearRetainedDialog, PatternsDialog, PrefsDialog
 from GUI.rules import RulesWidget
 from GUI.telemetry import TelemetryWidget
-from GUI.widgets import Toolbar, VLayout
+from GUI.widgets import Toolbar
+from models.devices import TasmotaDevicesModel
 from Util import (
     TasmotaDevice,
     TasmotaEnvironment,
@@ -45,17 +41,16 @@ from Util import (
     initial_commands,
     parse_topic,
 )
-from Util.models import TasmotaDevicesModel
 from Util.mqtt import MqttClient
 
-# TODO: rework device export
-
-__version__ = "0.2.13"
+__version__ = "0.3"
 __tasmota_minimum__ = "6.6.0.17"
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self, settings: QSettings, devices: QSettings, log_path: str, debug: bool, *args, **kwargs
+    ):
         super(MainWindow, self).__init__(*args, **kwargs)
         self._version = __version__
         self.setWindowIcon(QIcon(":/logo.png"))
@@ -71,16 +66,18 @@ class MainWindow(QMainWindow):
         self.mqtt_queue = []
         self.fulltopic_queue = []
 
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
-        self.devices = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "devices")
+        self.settings = settings
+        self.devices = devices
         self.setMinimumSize(QSize(1000, 600))
 
         # configure logging
         logging.basicConfig(
-            filename=os.path.join(QDir.tempPath(), "tdm.log"),
-            level=self.settings.value("loglevel", "INFO"),
+            level="DEBUG" if debug else "INFO",
             datefmt="%Y-%m-%d %H:%M:%S",
             format="%(asctime)s [%(levelname)s] %(message)s",
+        )
+        logging.getLogger().addHandler(
+            TimedRotatingFileHandler(filename=log_path, when="d", interval=1)
         )
         logging.info("### TDM START ###")
 
@@ -105,7 +102,7 @@ class MainWindow(QMainWindow):
 
             self.devices.endGroup()
 
-        self.device_model = TasmotaDevicesModel(self.env)
+        self.device_model = TasmotaDevicesModel(self.settings, self.devices, self.env)
 
         self.setup_mqtt()
         self.setup_main_layout()
@@ -131,7 +128,7 @@ class MainWindow(QMainWindow):
         if self.settings.value("connect_on_startup", False, bool):
             self.actToggleConnect.trigger()
 
-        self.tele_docks = {}
+        self.tele_docks = []
         self.consoles = []
 
     def setup_main_layout(self):
@@ -174,7 +171,7 @@ class MainWindow(QMainWindow):
         mMQTT.addAction(QIcon(), "Autodiscovery patterns", self.patterns)
 
         mMQTT.addSeparator()
-        mMQTT.addAction(QIcon(), "Clear obsolete retained LWTs", self.clear_LWT)
+        mMQTT.addAction(QIcon(), "Clear retained topics", self.clear_retained_topics)
 
         mMQTT.addSeparator()
         mMQTT.addAction(QIcon(), "Auto telemetry period", self.auto_telemetry_period)
@@ -188,9 +185,9 @@ class MainWindow(QMainWindow):
         mSettings.addAction(QIcon(), "BSSId aliases", self.bssid)
         mSettings.addSeparator()
         mSettings.addAction(QIcon(), "Preferences", self.prefs)
-
-        # mExport = self.menuBar().addMenu("Export")
-        # mExport.addAction(QIcon(), "OpenHAB", self.openhab)
+        mSettings.addSeparator()
+        mSettings.addAction(QIcon(), "Open config file", self.open_config_file)
+        mSettings.addAction(QIcon(), "Open log file location", self.open_log_location)
 
     def build_toolbars(self):
         main_toolbar = Toolbar(
@@ -209,7 +206,7 @@ class MainWindow(QMainWindow):
                 self.mqtt.publish(cmd, payload, 1)
 
     def setup_broker(self):
-        brokers_dlg = BrokerDialog()
+        brokers_dlg = BrokerDialog(self.settings)
         if brokers_dlg.exec_() == QDialog.Accepted and self.mqtt.state == self.mqtt.Connected:
             self.mqtt.disconnect()
 
@@ -335,8 +332,10 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Connection error: {reason[rc]}")
         self.actToggleConnect.setChecked(False)
 
-    def mqtt_message(self, topic, msg):
+    def mqtt_message(self, topic, msg, retained):
         # try to find a device by matching known FullTopics against the MQTT topic of the message
+        if retained:
+            self.env.retained.add(topic)
         device = self.env.find_device(topic)
         if device:
             if topic.endswith("LWT"):
@@ -373,8 +372,9 @@ class MainWindow(QMainWindow):
                     )
                     if match:
                         # assume that the matched topic is the one configured in device settings
-                        possible_topic = match.groupdict().get("topic")
-                        if possible_topic not in ("tele", "stat"):
+                        if (
+                            possible_topic := match.groupdict().get("topic")
+                        ) and possible_topic not in ("tele", "stat"):
                             # if the assumed topic is different from tele or stat, there is a chance
                             # that it's a valid topic. query the assumed device for its FullTopic.
                             # False positives won't reply.
@@ -471,10 +471,10 @@ class MainWindow(QMainWindow):
                     )
 
     def bssid(self):
-        BSSIdDialog().exec_()
+        BSSIdDialog(self.settings).exec_()
 
     def patterns(self):
-        PatternsDialog().exec_()
+        PatternsDialog(self.settings).exec_()
 
     # def openhab(self):
     #     OpenHABDialog(self.env).exec_()
@@ -482,19 +482,19 @@ class MainWindow(QMainWindow):
     def showSubs(self):
         QMessageBox.information(self, "Subscriptions", "\n".join(sorted(self.topics)))
 
-    def clear_LWT(self):
-        dlg = ClearLWTDialog(self.env)
-        if dlg.exec_() == ClearLWTDialog.Accepted:
+    def clear_retained_topics(self):
+        dlg = ClearRetainedDialog(self.env)
+        if dlg.exec_() == ClearRetainedDialog.Accepted:
             for row in range(dlg.lw.count()):
                 itm = dlg.lw.item(row)
                 if itm.checkState() == Qt.Checked:
                     topic = itm.text()
                     self.mqtt.publish(topic, retain=True)
-                    self.env.lwts.remove(topic)
+                    self.env.retained.remove(topic)
                     logging.info("MQTT: Cleared %s", topic)
 
     def prefs(self):
-        dlg = PrefsDialog()
+        dlg = PrefsDialog(self.settings)
         if dlg.exec_() == QDialog.Accepted:
 
             devices_short_version = self.settings.value("devices_short_version", True, bool)
@@ -522,6 +522,14 @@ class MainWindow(QMainWindow):
 
         self.settings.sync()
 
+    def open_config_file(self):
+        QDesktopServices.openUrl(QUrl.fromLocalFile(self.settings.fileName()))
+
+    @staticmethod
+    def open_log_location():
+        fi = QFileInfo(logging.getLogger().handlers[1].baseFilename)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(fi.absolutePath()))
+
     def auto_telemetry_period(self):
         curr_val = self.settings.value("autotelemetry", 5000, int)
         period, ok = QInputDialog.getInt(
@@ -544,17 +552,24 @@ class MainWindow(QMainWindow):
         if self.device:
             tele_widget = TelemetryWidget(self.device)
             self.addDockWidget(Qt.RightDockWidgetArea, tele_widget)
-            self.mqtt_publish(self.device.cmnd_topic("STATUS"), "8")
+            self.mqtt_publish(self.device.cmnd_topic("STATUS"), "10")
+            self.tele_docks.append(tele_widget)
+            self.resizeDocks(
+                self.tele_docks, [100 // len(self.tele_docks) for _ in self.tele_docks], Qt.Vertical
+            )
 
     @pyqtSlot()
     def openConsole(self):
         if self.device:
-            console_widget = ConsoleWidget(self.device)
+            console_widget = ConsoleWidget(self.settings, self.device)
             self.mqtt.messageSignal.connect(console_widget.consoleAppend)
             console_widget.sendCommand.connect(self.mqtt.publish)
             self.addDockWidget(Qt.BottomDockWidgetArea, console_widget)
             console_widget.command.setFocus()
             self.consoles.append(console_widget)
+            self.resizeDocks(
+                self.consoles, [100 // len(self.consoles) for _ in self.consoles], Qt.Horizontal
+            )
 
     @pyqtSlot()
     def openRulesEditor(self):
@@ -573,27 +588,8 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def openWebUI(self):
-        if self.device and self.device.p.get("IPAddress"):
-            url = QUrl(f"http://{self.device.p['IPAddress']}")
-
-            try:
-                webui = QWebEngineView()
-                webui.load(url)
-
-                frm_webui = QFrame()
-                frm_webui.setWindowTitle(f"WebUI [{self.device.name}]")
-                frm_webui.setFrameShape(QFrame.StyledPanel)
-                vl = VLayout(0)
-                vl.addElements(webui)
-                frm_webui.setLayout(vl)
-                frm_webui.destroyed.connect(self.updateMDI)
-
-                self.mdi.addSubWindow(frm_webui)
-                self.mdi.setViewMode(QMdiArea.TabbedView)
-                frm_webui.setWindowState(Qt.WindowMaximized)
-
-            except NameError:
-                QDesktopServices.openUrl(QUrl(f"http://{self.device.p['IPAddress']}"))
+        if self.device and (url := self.device.url):
+            QDesktopServices.openUrl(QUrl(url))
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:
@@ -632,21 +628,60 @@ class MainWindow(QMainWindow):
         e.accept()
 
 
-def start():
+def get_settings(args):
+    if args.local:
+        return QSettings("tdm.cfg", QSettings.IniFormat)
+    if args.config_location:
+        return QSettings(os.path.join(args.config_location, "tdm.cfg"), QSettings.IniFormat)
+    return QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
+
+
+def get_devices(args):
+    if args.local:
+        return QSettings("devices.cfg", QSettings.IniFormat)
+    if args.config_location:
+        return QSettings(os.path.join(args.config_location, "devices.cfg"), QSettings.IniFormat)
+    return QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "devices")
+
+
+def get_log_path(args):
+    if args.local:
+        return "tdm.log"
+    if args.log_location:
+        return os.path.join(args.log_location, "tdm.log")
+    return os.path.join(QDir.tempPath(), "tdm.log")
+
+
+def start(args):
     app = QApplication(sys.argv)
     app.lastWindowClosed.connect(app.quit)
     app.setStyle("Fusion")
 
-    MW = MainWindow()
+    settings, devices, log_path = get_settings(args), get_devices(args), get_log_path(args)
+    MW = MainWindow(settings, devices, log_path, args.debug)
     MW.show()
-
     sys.exit(app.exec_())
 
 
+def setup_parser():
+    parser = argparse.ArgumentParser(prog='Tasmota Device Manager')
+    parser.add_argument('--debug', action='store_true', help='Enable debugging')
+    parser.add_argument(
+        '--local',
+        action='store_true',
+        help='Store configuration and logs in the directory where TDM was started',
+    )
+    parser.add_argument('--config-location', type=pathlib.Path)
+    parser.add_argument('--log-location', type=pathlib.Path)
+    return parser
+
+
 if __name__ == "__main__":
+    parser = setup_parser()
+    args = parser.parse_args()
     # start()
     try:
-        start()
+        start(args)
     except Exception as e:  # noqa: 722
         logging.exception("EXCEPTION: %s", e)
         print(
