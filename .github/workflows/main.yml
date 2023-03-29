@@ -109,23 +109,53 @@ jobs:
           name: app
           path: dist/*.tar
 
-#   release:
-#     needs: [build-windows, build-windows-x86, build-ubuntu, build-macos]
-#     runs-on: ubuntu-latest
-#     continue-on-error: true
-#     steps:
-#       - name: Download artifacts
-#         uses: actions/download-artifact@v3
-#         with:
-#           name: app
-#           path: ./dist
-#       - name: setenv release tag
-#         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-#       - name: Release
-#         uses: jason2866/action-gh-release@v1.2
-#         with:
-#           tag_name: ${{ env.RELEASE_VERSION }}
-#           prerelease: false
-#           files: dist/*
-#         env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  build-macos-arm:
+    runs-on: self-hosted
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install requirements
+        run: |
+          pip install -r requirements.txt -r requirements_build.txt
+          npm install --global create-dmg
+      - name: Run PyInstaller
+        run: |
+          python -m PyInstaller tdmgr_mac.spec
+      - name: See dist directory
+        run: ls dist
+      - name: Rename app
+        run: |
+          mv dist/tdmgr*.app dist/tdmgr-macOS.app
+      - name: 'Tar files'
+        run: tar -cvf dist/MacOS_arm.tar dist/*
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: app
+          path: dist/*.tar
+
+   release:
+     needs: [build-windows, build-windows-x86, build-ubuntu, build-macos,build-macos-arm]
+     runs-on: ubuntu-latest
+     continue-on-error: true
+     steps:
+       - name: Download artifacts
+         uses: actions/download-artifact@v3
+         with:
+           name: app
+           path: ./dist
+       - name: setenv release tag
+         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+       - name: Release
+         uses: jason2866/action-gh-release@v1.2
+         with:
+           tag_name: ${{ env.RELEASE_VERSION }}
+           prerelease: false
+           files: dist/*
+         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
