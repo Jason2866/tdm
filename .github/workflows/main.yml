@@ -5,12 +5,11 @@ on:
   push:
     tags:
       - 'v*'
-
 jobs:
   build-windows:
-    runs-on: windows-2019
-    continue-on-error: true
-    steps:
+      runs-on: windows-2019
+      continue-on-error: true
+      steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Python
@@ -30,9 +29,9 @@ jobs:
           path: dist/tdmgr_*.exe
 
   build-windows-x86:
-    runs-on: windows-2019
-    continue-on-error: true
-    steps:
+      runs-on: windows-2019
+      continue-on-error: true
+      steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Python
@@ -52,9 +51,9 @@ jobs:
           path: dist/tdmgr_*.exe
 
   build-ubuntu:
-    runs-on: ubuntu-20.04
-    continue-on-error: true
-    steps:
+      runs-on: ubuntu-20.04
+      continue-on-error: true
+      steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Python
@@ -79,9 +78,9 @@ jobs:
           path: dist/tdmgr_*.gz
 
   build-macos:
-    runs-on: macOS-12
-    continue-on-error: true
-    steps:
+      runs-on: macOS-12
+      continue-on-error: true
+      steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Python
@@ -109,9 +108,9 @@ jobs:
           path: dist/*.tar
 
   build-macos-arm:
-    runs-on: self-hosted
-    continue-on-error: true
-    steps:
+      runs-on: self-hosted
+      continue-on-error: true
+      steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Python
@@ -138,11 +137,11 @@ jobs:
           name: app
           path: dist/*.tar
 
-   release:
-     needs: [build-windows, build-windows-x86, build-ubuntu, build-macos, build-macos-arm]
-     runs-on: ubuntu-latest
-     continue-on-error: true
-     steps:
+  release:
+       needs: [build-windows, build-windows-x86, build-ubuntu, build-macos, build-macos-arm]
+       runs-on: ubuntu-latest
+       continue-on-error: true
+       steps:
        - name: Download artifacts
          uses: actions/download-artifact@v3
          with:
