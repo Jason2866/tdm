@@ -78,7 +78,6 @@ jobs:
           name: app
           path: dist/tdmgr_*.gz
 
-
   build-macos:
     runs-on: macOS-12
     continue-on-error: true
@@ -140,7 +139,7 @@ jobs:
           path: dist/*.tar
 
    release:
-     needs: [build-windows, build-windows-x86, build-ubuntu, build-macos,build-macos-arm]
+     needs: [build-windows, build-windows-x86, build-ubuntu, build-macos, build-macos-arm]
      runs-on: ubuntu-latest
      continue-on-error: true
      steps:
