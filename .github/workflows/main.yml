@@ -94,15 +94,16 @@ jobs:
       - name: Run PyInstaller
         run: |
           python -m PyInstaller tdmgr_mac.spec
-          rm -Rf dist/*.app
           create-dmg tdmgr_Mac_x64.dmg dist
       - name: See dist directory
-        run: ls dist
+        run: |
+          cp /Users/runner/work/tdm/tdm/*.dmg dist
+          ls dist
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v3
         with:
           name: app
-          path: /Users/runner/work/tdm/tdm/tdmgr_Mac_x64.dmg
+          path: dist/*.dmg
 
   build-macos-arm:
       runs-on: self-hosted
@@ -117,15 +118,16 @@ jobs:
       - name: Run PyInstaller
         run: |
           python -m PyInstaller tdmgr_mac.spec
-          rm -Rf dist/*.app
           create-dmg tdmgr_Mac_arm.dmg dist
       - name: See dist directory
-        run: ls dist
+        run: |
+          cp /Volumes/T7-Mac/actions_tdm/_work/tdm/tdm/*.dmg dist
+          ls dist
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v3
         with:
           name: app
-          path: /Volumes/T7-Mac/actions_tdm/_work/tdm/tdm/tdmgr_Mac_arm.dmg
+          path: dist/*.dmg
 
   release:
        needs: [build-windows, build-windows-x86, build-ubuntu, build-macos, build-macos-arm]
