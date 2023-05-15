@@ -102,7 +102,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: app
-          path: dist/*.dmg
+          path: /Users/runner/work/tdm/tdm/tdmgr_Mac_x64.dmg
 
   build-macos-arm:
       runs-on: self-hosted
@@ -125,7 +125,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: app
-          path: dist/*.dmg
+          path: /Volumes/T7-Mac/actions_tdm/_work/tdm/tdm/tdmgr_Mac_arm.dmg
 
   release:
        needs: [build-windows, build-windows-x86, build-ubuntu, build-macos, build-macos-arm]
