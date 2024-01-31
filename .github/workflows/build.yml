@@ -16,7 +16,7 @@ jobs:
 
             -   uses: actions/setup-python@v4
                 with:
-                    python-version: '3.8'
+                    python-version: '3.11'
 
             -   name: Install dependencies
                 run: |
@@ -42,14 +42,16 @@ jobs:
                         arch: x64
                     -   os: macos-latest
                         arch: x64
+                    -   os: macos-14
+                        arch: arm64
         steps:
-            -   uses: actions/checkout@v3
+            -   uses: actions/checkout@v4
                 with:
                     fetch-depth: 0
-            -   name: Set up Python 3.8
-                uses: actions/setup-python@v4
+            -   name: Set up Python 3.11
+                uses: actions/setup-python@v5
                 with:
-                    python-version: '3.8'
+                    python-version: '3.11'
                     architecture: ${{ matrix.arch }}
             -   name: Install PyInstaller
                 run: pip install -r requirements_build.txt
@@ -58,7 +60,7 @@ jobs:
                 run: pyinstaller --noconfirm --clean tdmgr.spec
 
             -   name: Upload binaries artifact to workflow
-                uses: actions/upload-artifact@v2
+                uses: actions/upload-artifact@v4
                 with:
                     name: tdmgr
                     path: dist/*
