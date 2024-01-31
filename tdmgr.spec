@@ -22,7 +22,7 @@ if ('CYGWIN_NT' in sys_name) or ('MSYS_NT' in sys_name) or ('MINGW' in sys_name)
     sys_name = 'Windows'
 
 _version = setuptools_scm.get_version(local_scheme='no-local-version')
-_suffix = sys_name + bits
+_suffix = str(sys_name) + str(bits)
 filename = f"tdmgr_{_version}{_suffix}"
 
 block_cipher = None
