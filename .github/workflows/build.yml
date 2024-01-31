@@ -61,7 +61,7 @@ jobs:
                 run: pyinstaller --noconfirm --clean tdmgr.spec
 
             -   name: Upload binaries artifact to workflow
-                uses: actions/upload-artifact@v4
+                uses: jason2866/upload-artifact@v2.0.3
                 with:
                     name: tdmgr
                     path: dist/*
