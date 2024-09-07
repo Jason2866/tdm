@@ -37,7 +37,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     python_requires=">=3.6",
-    install_requires=["paho_mqtt>=1.4", "PyQt5>=5.14.2,<6"],
+    install_requires=["paho_mqtt>=1.4,<2", "PyQt5>=5.14.2,<6"],
     packages=["GUI", "Util"],
     entry_points=entry_points,
     scripts=scripts,
