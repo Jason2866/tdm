@@ -11,9 +11,9 @@ jobs:
       continue-on-error: true
       steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.8'
           architecture: 'x64'
@@ -33,9 +33,9 @@ jobs:
       continue-on-error: true
       steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.8'
           architecture: 'x86'
@@ -55,9 +55,9 @@ jobs:
       continue-on-error: true
       steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
       - name: Install requirements
@@ -82,9 +82,9 @@ jobs:
       continue-on-error: true
       steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
       - name: Install requirements
@@ -106,11 +106,11 @@ jobs:
           path: dist/*.dmg
 
   build-macos-arm:
-      runs-on: self-hosted
+      runs-on: macOS-14
       continue-on-error: true
       steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install requirements
         run: |
           pip install -r requirements.txt -r requirements_build.txt
@@ -121,7 +121,7 @@ jobs:
           create-dmg tdmgr_Mac_arm.dmg dist
       - name: See dist directory
         run: |
-          cp /Volumes/T7-Mac/actions_tdm/_work/tdm/tdm/*.dmg dist
+          cp /Users/runner/work/tdm/tdm/*.dmg dist
           ls dist
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v3
