@@ -53,7 +53,8 @@ jobs:
         if: ${{ matrix.os }} != 'windows-2019'
         run: |
           brew install create-dmg
-          create-dmg tdmgr_Mac_${{ matrix.arch }}.dmg dist
+          create-dmg tdmgr_mac_${{ matrix.arch }}.dmg dist
+          cp /Users/runner/work/tdm/tdm/*.dmg dist
 
       - name: Upload binaries artifact to workflow
         uses: jason2866/upload-artifact@v2.0.3
