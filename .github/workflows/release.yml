@@ -50,7 +50,7 @@ jobs:
         run: pyinstaller --noconfirm --clean tdmgr.spec
 
       - name: Pack Mac binary as DMG
-        if: ${{ matrix.os }} == "macos-12, x64" || ${{ matrix.os }} == "macos-14, arm64"
+        if: ${{ matrix.os }} == "macos-12" || ${{ matrix.os }} == "macos-14"
         run: |
           brew install create-dmg
           create-dmg tdmgr_mac_${{ matrix.arch }}.dmg dist
