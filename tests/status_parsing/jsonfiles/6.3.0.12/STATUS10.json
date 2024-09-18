@@ -1,0 +1,10 @@
+{
+  "StatusSNS": {
+    "AM2301": {
+      "Humidity": 24.4,
+      "Temperature": 23.9
+    },
+    "TempUnit": "C",
+    "Time": "2024-01-11T20:39:58"
+  }
+}

@@ -3,8 +3,8 @@ from socket import inet_aton
 
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
 
-from tdmgr.models.common import DeviceRoles
-from tdmgr.util import TasmotaDevice
+from tdmgr.models.roles import DeviceRoles
+from tdmgr.tasmota.device import TasmotaDevice
 
 
 class TasmotaDevicesModel(QAbstractTableModel):
@@ -33,10 +33,6 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
     def notify_change(self, d, key):
         row = self.tasmota_env.devices.index(d)
-        # if key.startswith("POWER") and "Power" in self.columns:
-        #     power_idx = self.columns.index("Power")
-        #     idx = self.index(row, power_idx)
-        #     self.dataChanged.emit(idx, idx)
 
         if any(
             [
@@ -84,7 +80,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
                 if col_name == "Module":
                     if val == 0:
-                        return d.p["Template"].get("NAME", "Fetching template name...")
+                        return d.p["Template"]
                     else:
                         return d.module()
 
@@ -132,7 +128,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 return val
 
             if role == DeviceRoles.LWTRole:
-                return d.is_online
+                return d.online
 
             if role == DeviceRoles.RestartReasonRole:
                 return d.p.get("RestartReason")

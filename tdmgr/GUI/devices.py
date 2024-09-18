@@ -1,5 +1,6 @@
 import os
 from json import dumps
+from typing import Optional
 
 from PyQt5.QtCore import QDir, QSortFilterProxyModel, Qt, QUrl, pyqtSignal
 from PyQt5.QtGui import QColor, QIcon
@@ -43,7 +44,9 @@ from tdmgr.GUI.widgets import (
     base_view,
     default_views,
 )
-from tdmgr.util import TasmotaDevice, initial_commands, resets
+from tdmgr.mqtt import initial_commands
+from tdmgr.tasmota.commands import resets
+from tdmgr.tasmota.device import TasmotaDevice
 
 
 class DevicesListWidget(QWidget):
@@ -62,7 +65,7 @@ class DevicesListWidget(QWidget):
         self.mqtt = parent.mqtt
         self.env = parent.env
 
-        self.device: TasmotaDevice
+        self.device: Optional[TasmotaDevice] = None
         self.idx = None
 
         self.nam = QNetworkAccessManager()
@@ -197,7 +200,7 @@ class DevicesListWidget(QWidget):
         self.agShutters = QActionGroup(self)
         self.agShutters.setVisible(False)
         self.agShutters.setExclusive(False)
-        for shutter_idx in range(1, 5):
+        for shutter_idx in range(1, 9):
             for idx, arrow in enumerate([ARROW_UP, ARROW_DN]):
                 px = make_relay_pixmap(arrow)
                 self.agShutters.addAction(
@@ -409,7 +412,10 @@ class DevicesListWidget(QWidget):
     def move_shutter(self, action):
         idx = 1 + self.agShutters.actions().index(action)
         shutter = (idx + 1) // 2
-        action = "ShutterClose" if idx % 2 == 0 else "ShutterOpen"
+        direction = self.device.p[f"Shutter{shutter}"]["Direction"]
+        action = (
+            "ShutterStop" if direction != 0 else "ShutterClose" if idx % 2 == 0 else "ShutterOpen"
+        )
         self.mqtt.publish(self.device.cmnd_topic(f"{action}{shutter}"))
 
     def set_color(self):

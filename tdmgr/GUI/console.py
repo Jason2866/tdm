@@ -1,17 +1,7 @@
 import os
 from datetime import datetime
 
-from PyQt5.QtCore import (
-    QDir,
-    QEvent,
-    QRegExp,
-    QSize,
-    QStringListModel,
-    Qt,
-    QTime,
-    pyqtSignal,
-    pyqtSlot,
-)
+from PyQt5.QtCore import QDir, QEvent, QRegExp, QSize, QStringListModel, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QColor, QFont, QIcon, QSyntaxHighlighter, QTextCharFormat
 from PyQt5.QtWidgets import (
     QComboBox,
@@ -28,7 +18,9 @@ from PyQt5.QtWidgets import (
 )
 
 from tdmgr.GUI.widgets import GroupBoxV, HLayout, VLayout, console_font
-from tdmgr.util.commands import commands
+from tdmgr.mqtt import Message
+from tdmgr.tasmota.commands import commands
+from tdmgr.tasmota.device import TasmotaDevice
 
 
 class ConsoleWidget(QDockWidget):
@@ -38,7 +30,7 @@ class ConsoleWidget(QDockWidget):
         super().__init__()
         self.setAllowedAreas(Qt.BottomDockWidgetArea)
         self.setWindowTitle(f"Console [{device.name}]")
-        self.device = device
+        self.device: TasmotaDevice = device
 
         self.settings = settings
 
@@ -120,11 +112,12 @@ class ConsoleWidget(QDockWidget):
         if text == "":
             self.command.completer().setModel(QStringListModel(sorted(commands)))
 
-    @pyqtSlot(str, str, bool)
-    def consoleAppend(self, topic, msg, retained=False):
-        if self.device.matches(topic):
-            tstamp = QTime.currentTime().toString("HH:mm:ss")
-            self.console.appendPlainText(f"[{tstamp}] {topic} {msg}")
+    @pyqtSlot(Message)
+    def consoleAppend(self, msg: Message):
+        if self.device.message_topic_matches_fulltopic(msg):
+            self.console.appendPlainText(
+                f"[{msg.timestamp.strftime('%X')}] {msg.topic} {msg.payload}"
+            )
 
     def eventFilter(self, obj, e):
         if obj == self.command and e.type() == QEvent.KeyPress:

@@ -2,8 +2,8 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
 from tdmgr.GUI.widgets import Command, HTMLLabel, Interlock, PulseTime, VLayout, docs_url
-from tdmgr.util.commands import commands
-from tdmgr.util.setoptions import setoptions
+from tdmgr.tasmota.commands import commands
+from tdmgr.tasmota.setoptions import setoptions
 
 
 class PowerDialog(QDialog):
@@ -38,7 +38,7 @@ class PowerDialog(QDialog):
         )
         vl_cmd.addWidget(self.ci)
 
-        self.cpt = PulseTime("PulseTime", commands["PulseTime"], self.device.pulsetime())
+        self.cpt = PulseTime("PulseTime", commands["PulseTime"], self.device)
         vl_cmd.addWidget(self.cpt)
 
         vl_cmd.addStretch(1)
