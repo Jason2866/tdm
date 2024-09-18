@@ -12,9 +12,6 @@ on:
 
 jobs:
   Binaries:
-    runs-on: ${{ matrix.os }}
-    outputs:
-      version-tag: ${{ steps.version_tag.outputs.VERSION_TAG }}
     strategy:
       fail-fast: false
       matrix:
@@ -27,7 +24,9 @@ jobs:
             arch: x64
           - os: macos-14
             arch: arm64
-
+    runs-on: ${{ matrix.os }}
+    outputs:
+      version-tag: ${{ steps.version_tag.outputs.VERSION_TAG }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,7 +35,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
-          architecture: ${{ matrix.arch }}
 
       - name: Install PyInstaller
         run: pip install -r requirements_build.txt
@@ -50,7 +48,7 @@ jobs:
         run: pyinstaller --noconfirm --clean tdmgr.spec
 
       - name: Pack Mac binary as DMG ${{ matrix.os }}
-        if: ${{ matrix.os }} == "macos-12" || ${{ matrix.os }} == "macos-14"
+        if: "${{ matrix.os }} == 'macos-12' || ${{ matrix.os }} == 'macos-14'"
         run: |
           brew install create-dmg
           create-dmg tdmgr_mac_${{ matrix.arch }}.dmg dist
