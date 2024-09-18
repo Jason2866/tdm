@@ -51,7 +51,7 @@ jobs:
         run: pyinstaller --noconfirm --clean tdmgr.spec
 
       - name: Upload binaries artifact to workflow
-        uses: actions/upload-artifact@v4
+        uses: jason2866/upload-artifact@v2.0.3
         with:
           name: tdmgr
           path: dist/*
@@ -63,7 +63,7 @@ jobs:
             VERSION_TAG: ${{ needs.Binaries.outputs.version-tag }}
         steps:
             -   name: Download artifacts from build
-                uses: actions/download-artifact@v3
+                uses: jason2866/download-artifact@v3.0.4
 
             -   name: Create Draft Release
                 id: create_release
