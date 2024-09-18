@@ -23,7 +23,7 @@ jobs:
             arch: x86
           - os: windows-2019
             arch: x64
-          - os: macos-13
+          - os: macos-12
             arch: x64
           - os: macos-14
             arch: arm64
@@ -50,10 +50,11 @@ jobs:
         run: pyinstaller --noconfirm --clean tdmgr.spec
 
       - name: Pack Mac binary as DMG
-        if: ${{ matrix.os }} != "windows-2019"
+        if: ${{ matrix.os }} == "macos-12, x64" || ${{ matrix.os }} == "macos-14, arm64"
         run: |
           brew install create-dmg
           create-dmg tdmgr_mac_${{ matrix.arch }}.dmg dist
+          rm -rf dist/*.app
           cp /Users/runner/work/tdm/tdm/*.dmg dist
 
       - name: Upload binaries artifact to workflow
