@@ -50,8 +50,10 @@ jobs:
         run: pyinstaller --noconfirm --clean tdmgr.spec
 
       - name: Pack Mac binary as DMG
-        if: "${{ matrix.os }} != 'windows-2019'"
-        run: create-dmg tdmgr_Mac_x64.dmg dist
+        if: ${{ matrix.os }} != 'windows-2019'
+        run: |
+          brew install create-dmg
+          create-dmg tdmgr_Mac_${{ matrix.arch }}.dmg dist
 
       - name: Upload binaries artifact to workflow
         uses: jason2866/upload-artifact@v2.0.3
