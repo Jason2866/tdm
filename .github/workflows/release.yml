@@ -8,7 +8,6 @@ on:
       - develop
       - actions_mac
     paths-ignore:
-      - '.github/**'
       - '**.md'
 
 jobs:
@@ -49,6 +48,10 @@ jobs:
 
       - name: Build with PyInstaller
         run: pyinstaller --noconfirm --clean tdmgr.spec
+
+      - name: Pack Mac binary as DMG
+        if: "${{ matrix.os }} != 'windows-2019'"
+        run: create-dmg tdmgr_Mac_x64.dmg dist
 
       - name: Upload binaries artifact to workflow
         uses: jason2866/upload-artifact@v2.0.3
