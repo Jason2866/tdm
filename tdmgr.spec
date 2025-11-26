@@ -23,7 +23,7 @@ if ('CYGWIN_NT' in sys_name) or ('MSYS_NT' in sys_name) or ('MINGW' in sys_name)
 
 _version = setuptools_scm.get_version(local_scheme='no-local-version')
 _suffix = str(sys_name) + str(bits)
-filename = f"tdmgr_{_version}{_suffix}"
+filename = "tdmgr"
 
 block_cipher = None
 
@@ -53,4 +53,4 @@ exe = EXE(pyz,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
-          console=False, icon='tdmgr.ico')
+          console=False, icon='tdmgr.icns')
