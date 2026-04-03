@@ -2,7 +2,7 @@ import logging
 import re
 from json import JSONDecodeError, loads
 
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 from PyQt5.QtCore import QObject, pyqtSignal
 
 prefixes = ["tele", "stat", "cmnd"]

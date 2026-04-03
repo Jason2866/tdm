@@ -62,8 +62,26 @@ jobs:
             -   name: Build with PyInstaller
                 run: pyinstaller --noconfirm --clean tdmgr.spec
 
+            -   name: Create archive from build directory
+                shell: bash
+                run: |
+                    cd dist
+                    if [ "$RUNNER_OS" == "Windows" ]; then
+                      7z a -tzip tdmgr-${{ matrix.os }}-${{ matrix.arch }}.zip tdmgr/
+                      7z a -tzip tdmgr-console-${{ matrix.os }}-${{ matrix.arch }}.zip tdmgr-console/
+                    elif [ "$RUNNER_OS" == "macOS" ]; then
+                      # Package .app bundle for macOS
+                      tar -czf tdmgr-${{ matrix.os }}-${{ matrix.arch }}.tar.gz tdmgr.app
+                      tar -czf tdmgr-console-${{ matrix.os }}-${{ matrix.arch }}.tar.gz tdmgr-console/
+                    else
+                      tar -czf tdmgr-${{ matrix.os }}-${{ matrix.arch }}.tar.gz tdmgr/
+                      tar -czf tdmgr-console-${{ matrix.os }}-${{ matrix.arch }}.tar.gz tdmgr-console/
+                    fi
+
             -   name: Upload binaries artifact to workflow
                 uses: jason2866/upload-artifact@v2.0.3
                 with:
                     name: tdmgr
-                    path: dist/*
+                    path: |
+                        dist/*.zip
+                        dist/*.tar.gz

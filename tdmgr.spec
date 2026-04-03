@@ -40,17 +40,61 @@ a = Analysis(['tdmgr/run.py'],
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
+# GUI version (no console)
 exe = EXE(pyz,
           a.scripts,
-          a.binaries,
-          a.zipfiles,
-          a.datas,
           [],
+          exclude_binaries=True,
           name=filename,
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          upx_exclude=[],
-          runtime_tmpdir=None,
-          console=False, icon='tdmgr.icns')
+          console=False,
+          disable_windowed_traceback=False,
+          target_arch=None,
+          codesign_identity=None,
+          entitlements_file=None,
+          icon='tdmgr.icns')
+
+coll = COLLECT(exe,
+               a.binaries,
+               a.zipfiles,
+               a.datas,
+               strip=False,
+               upx=True,
+               upx_exclude=[],
+               name=filename)
+
+# Create macOS .app bundle for GUI version
+if sys_name in ('Darwin', 'DarwinARM'):
+    app = BUNDLE(coll,
+                 name='tdmgr.app',
+                 icon='tdmgr.icns',
+                 bundle_identifier=None)
+
+# Console version (with terminal)
+exe_console = EXE(pyz,
+                  a.scripts,
+                  [],
+                  exclude_binaries=True,
+                  name=filename + '-console',
+                  debug=False,
+                  bootloader_ignore_signals=False,
+                  strip=False,
+                  upx=True,
+                  console=True,
+                  disable_windowed_traceback=False,
+                  target_arch=None,
+                  codesign_identity=None,
+                  entitlements_file=None,
+                  icon='tdmgr.icns')
+
+coll_console = COLLECT(exe_console,
+                       a.binaries,
+                       a.zipfiles,
+                       a.datas,
+                       strip=False,
+                       upx=True,
+                       upx_exclude=[],
+                       name=filename + '-console')
